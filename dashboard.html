@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fleet Governance Console</title>
+<style>
+  :root{
+    --bg: #0B0E11;
+    --panel: #12161C;
+    --panel-border: #1F2630;
+    --text: #E7EBEF;
+    --muted: #6B7684;
+    --safe: #35D07F;
+    --danger: #FF5555;
+    --warn: #F0A93C;
+    --mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); padding:28px 32px 60px;
+    min-height:100vh;
+  }
+  h1{
+    font-family:var(--mono); font-size:15px; font-weight:600;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 4px;
+  }
+  .subtitle{ font-size:13px; color:var(--muted); margin-bottom:24px; }
+  .top-row{ display:flex; gap:20px; align-items:stretch; margin-bottom:24px; flex-wrap:wrap; }
+
+  .panel{
+    background:var(--panel); border:1px solid var(--panel-border);
+    border-radius:10px; padding:18px 20px;
+  }
+  .panel-title{
+    font-family:var(--mono); font-size:11px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); margin-bottom:12px;
+  }
+
+  /* Fleet status strip */
+  .fleet-status{ flex:1; min-width:260px; display:flex; align-items:center; gap:16px; }
+  .heartbeat{
+    width:14px; height:14px; border-radius:50%; background:var(--safe);
+    box-shadow:0 0 0 0 rgba(53,208,127,.5);
+    animation:pulse 1.8s infinite;
+    flex-shrink:0;
+  }
+  .heartbeat.stopped{ background:var(--danger); animation:pulseDanger 1s infinite; }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(53,208,127,.5); }
+    70%{ box-shadow:0 0 0 10px rgba(53,208,127,0); }
+    100%{ box-shadow:0 0 0 0 rgba(53,208,127,0); }
+  }
+  @keyframes pulseDanger{
+    0%{ box-shadow:0 0 0 0 rgba(255,85,85,.6); }
+    70%{ box-shadow:0 0 0 14px rgba(255,85,85,0); }
+    100%{ box-shadow:0 0 0 0 rgba(255,85,85,0); }
+  }
+  .fleet-status .label{ font-family:var(--mono); font-size:13px; }
+  .fleet-status .label b{ display:block; font-size:16px; }
+  .fleet-spend{ font-family:var(--mono); font-size:13px; color:var(--muted); margin-left:auto; }
+  .fleet-spend b{ color:var(--text); }
+
+  /* Kill switch */
+  .kill-switch-panel{ display:flex; flex-direction:column; align-items:center; gap:10px; min-width:180px; }
+  .kill-btn{
+    width:100px; height:100px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ff6b6b, #b91c1c 70%);
+    border:4px solid #7a1414; color:#fff; font-family:var(--mono);
+    font-weight:700; font-size:12px; letter-spacing:.05em; cursor:pointer;
+    box-shadow:0 4px 0 #6b1010, 0 6px 14px rgba(185,28,28,.4);
+    transition:transform .08s ease, box-shadow .08s ease;
+    text-transform:uppercase;
+  }
+  .kill-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #6b1010; }
+  .kill-btn.engaged{
+    background:radial-gradient(circle at 35% 30%, #4ade80, #16a34a 70%);
+    border-color:#0f5c22; box-shadow:0 4px 0 #0f5c22, 0 6px 14px rgba(22,163,74,.4);
+  }
+  .kill-btn.engaged:active{ box-shadow:0 1px 0 #0f5c22; }
+  .kill-caption{ font-family:var(--mono); font-size:10px; color:var(--muted); text-align:center; }
+
+  /* Agent cards */
+  .agents-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px,1fr)); gap:16px; margin-bottom:24px; }
+  .agent-card{ display:flex; flex-direction:column; gap:10px; }
+  .agent-name{ font-size:15px; font-weight:600; display:flex; justify-content:space-between; align-items:center; }
+  .status-pill{
+    font-family:var(--mono); font-size:10px; padding:3px 8px; border-radius:20px;
+    text-transform:uppercase; letter-spacing:.05em;
+  }
+  .status-pill.active{ background:rgba(53,208,127,.15); color:var(--safe); }
+  .status-pill.revoked{ background:rgba(255,85,85,.15); color:var(--danger); }
+  .actions-list{ font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .cap-bar-wrap{ margin-top:4px; }
+  .cap-bar-label{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:4px; }
+  .cap-bar{ height:6px; border-radius:4px; background:#1F2630; overflow:hidden; }
+  .cap-bar-fill{ height:100%; background:var(--safe); transition:width .4s ease, background .4s ease; }
+  .cap-bar-fill.warn{ background:var(--warn); }
+  .cap-bar-fill.over{ background:var(--danger); }
+  .revoke-btn{
+    margin-top:6px; font-family:var(--mono); font-size:11px; padding:7px;
+    border-radius:6px; border:1px solid var(--panel-border); background:#1A2029;
+    color:var(--text); cursor:pointer; text-transform:uppercase; letter-spacing:.04em;
+  }
+  .revoke-btn:hover{ border-color:var(--muted); }
+  .revoke-btn.is-revoked{ color:var(--safe); }
+
+  /* Feed + audit log */
+  .bottom-row{ display:grid; grid-template-columns:1fr 1.3fr; gap:20px; }
+  .feed-list{ display:flex; flex-direction:column; gap:0; max-height:420px; overflow-y:auto; }
+  .feed-row{
+    display:grid; grid-template-columns:110px 110px 1fr 70px; gap:10px;
+    font-family:var(--mono); font-size:11.5px; padding:8px 4px;
+    border-bottom:1px solid var(--panel-border); align-items:center;
+  }
+  .feed-row:last-child{ border-bottom:none; }
+  .feed-time{ color:var(--muted); }
+  .feed-decision{ text-align:right; text-transform:uppercase; font-weight:600; letter-spacing:.03em; }
+  .feed-decision.allowed{ color:var(--safe); }
+  .feed-decision.denied{ color:var(--danger); }
+  .feed-reason{ color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:#1F2630; border-radius:4px; }
+</style>
+</head>
+<body>
+
+<h1>Fleet Governance Console</h1>
+<div class="subtitle">Live oversight for autonomous financial agents</div>
+
+<div class="top-row">
+  <div class="panel fleet-status">
+    <div class="heartbeat" id="heartbeat"></div>
+    <div class="label">Fleet status <b id="fleetStatusText">Operational</b></div>
+    <div class="fleet-spend">Fleet spend today <b id="fleetSpend">$0.00</b> / <span id="fleetCap">$0</span></div>
+  </div>
+  <div class="panel kill-switch-panel">
+    <button class="kill-btn" id="killBtn" onclick="toggleKillSwitch()">STOP</button>
+    <div class="kill-caption">Fleet-wide<br>emergency stop</div>
+  </div>
+</div>
+
+<div class="agents-grid" id="agentsGrid"></div>
+
+<div class="bottom-row">
+  <div class="panel">
+    <div class="panel-title">Live Activity Feed</div>
+    <div class="feed-list" id="feedList"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Audit Log</div>
+    <div class="feed-list" id="auditList"></div>
+  </div>
+</div>
+
+<script>
+const API = "http://localhost:8000";
+let killSwitchOn = false;
+
+async function refreshAll(){
+  try {
+    const [status, agents, feed, audit] = await Promise.all([
+      fetch(`${API}/status`).then(r=>r.json()),
+      fetch(`${API}/agents`).then(r=>r.json()),
+      fetch(`${API}/feed?limit=15`).then(r=>r.json()),
+      fetch(`${API}/audit-log?limit=15`).then(r=>r.json()),
+    ]);
+    renderStatus(status);
+    renderAgents(agents);
+    renderFeed(feed, "feedList");
+    renderFeed(audit, "auditList");
+  } catch(e){
+    console.error("Backend unreachable — is main.py running on :8000?", e);
+  }
+}
+
+function renderStatus(status){
+  killSwitchOn = status.kill_switch;
+  document.getElementById("heartbeat").className = "heartbeat" + (killSwitchOn ? " stopped" : "");
+  document.getElementById("fleetStatusText").textContent = killSwitchOn ? "Emergency Stop Active" : "Operational";
+  document.getElementById("fleetSpend").textContent = "$" + status.fleet_spend_today.toFixed(2);
+  document.getElementById("fleetCap").textContent = "$" + status.fleet_daily_cap.toFixed(0);
+  const btn = document.getElementById("killBtn");
+  btn.textContent = killSwitchOn ? "RESUME" : "STOP";
+  btn.className = "kill-btn" + (killSwitchOn ? " engaged" : "");
+}
+
+function renderAgents(agents){
+  const grid = document.getElementById("agentsGrid");
+  grid.innerHTML = "";
+  for(const [id, a] of Object.entries(agents)){
+    const pct = a.daily_cap > 0 ? Math.min(100, (a.spend_today / a.daily_cap) * 100) : 0;
+    const barClass = pct > 90 ? "over" : pct > 65 ? "warn" : "";
+    const card = document.createElement("div");
+    card.className = "panel agent-card";
+    card.innerHTML = `
+      <div class="agent-name">${a.display_name}
+        <span class="status-pill ${a.revoked ? 'revoked' : 'active'}">${a.revoked ? 'Revoked' : 'Active'}</span>
+      </div>
+      <div class="actions-list">${a.allowed_actions.join(" · ")}</div>
+      ${a.daily_cap > 0 ? `
+      <div class="cap-bar-wrap">
+        <div class="cap-bar-label"><span>Daily spend</span><span>$${a.spend_today.toFixed(0)} / $${a.daily_cap.toFixed(0)}</span></div>
+        <div class="cap-bar"><div class="cap-bar-fill ${barClass}" style="width:${pct}%"></div></div>
+      </div>` : `<div class="cap-bar-wrap"><div class="cap-bar-label"><span>No spend authority</span></div></div>`}
+      <button class="revoke-btn ${a.revoked ? 'is-revoked' : ''}" onclick="toggleRevoke('${id}', ${a.revoked})">
+        ${a.revoked ? "Reinstate agent" : "Revoke agent"}
+      </button>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+function renderFeed(rows, targetId){
+  const el = document.getElementById(targetId);
+  el.innerHTML = rows.map(r => {
+    const time = new Date(r.timestamp).toLocaleTimeString();
+    return `
+      <div class="feed-row">
+        <span class="feed-time">${time}</span>
+        <span>${r.agent_id}</span>
+        <span class="feed-reason" title="${r.reason}">${r.action}${r.amount ? " · $"+r.amount.toFixed(2) : ""} — ${r.reason}</span>
+        <span class="feed-decision ${r.decision}">${r.decision}</span>
+      </div>`;
+  }).join("");
+}
+
+async function toggleKillSwitch(){
+  const endpoint = killSwitchOn ? "emergency-resume" : "emergency-stop";
+  await fetch(`${API}/${endpoint}`, { method: "POST" });
+  refreshAll();
+}
+
+async function toggleRevoke(agentId, currentlyRevoked){
+  const endpoint = currentlyRevoked ? "reinstate" : "revoke";
+  await fetch(`${API}/agents/${agentId}/${endpoint}`, { method: "POST" });
+  refreshAll();
+}
+
+refreshAll();
+setInterval(refreshAll, 1500);
+</script>
+</body>
+</html>
