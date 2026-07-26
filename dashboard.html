@@ -218,14 +218,28 @@ function renderFeed(rows, targetId){
   const el = document.getElementById(targetId);
   el.innerHTML = rows.map(r => {
     const time = new Date(r.timestamp).toLocaleTimeString();
+    const agentId = escapeHtml(r.agent_id);
+    const action = escapeHtml(r.action);
+    const reason = escapeHtml(r.reason);
+    const decision = escapeHtml(r.decision);
     return `
       <div class="feed-row">
         <span class="feed-time">${time}</span>
-        <span>${r.agent_id}</span>
-        <span class="feed-reason" title="${r.reason}">${r.action}${r.amount ? " · $"+r.amount.toFixed(2) : ""} — ${r.reason}</span>
-        <span class="feed-decision ${r.decision}">${r.decision}</span>
+        <span>${agentId}</span>
+        <span class="feed-reason" title="${reason}">${action}${r.amount ? " · $"+r.amount.toFixed(2) : ""} - ${reason}</span>
+        <span class="feed-decision ${decision}">${decision}</span>
       </div>`;
   }).join("");
+}
+
+function escapeHtml(value){
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[ch]));
 }
 
 async function toggleKillSwitch(){
