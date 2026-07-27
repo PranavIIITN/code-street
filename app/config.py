@@ -8,6 +8,8 @@ AGENTS: dict = {
     "payment_agent": {
         "display_name": "Payment Agent",
         "allowed_actions": ["transfer", "read_balance"],
+        "allowed_resources": ["*"],
+        "max_risk_score": 0.85,
         "per_txn_cap": 1000.0,
         "daily_cap": 5000.0,
         "revoked": False,
@@ -15,6 +17,8 @@ AGENTS: dict = {
     "support_agent": {
         "display_name": "Support Agent",
         "allowed_actions": ["read_balance", "create_ticket"],
+        "allowed_resources": ["tickets", "balance_query", "customer_support"],
+        "max_risk_score": 0.50,
         "per_txn_cap": 0.0,
         "daily_cap": 0.0,
         "revoked": False,
@@ -22,6 +26,8 @@ AGENTS: dict = {
     "fraud_agent": {
         "display_name": "Fraud Review Agent",
         "allowed_actions": ["read_balance", "flag_transaction", "freeze_account"],
+        "allowed_resources": ["fraud_logs", "accounts", "balance_query"],
+        "max_risk_score": 0.95,
         "per_txn_cap": 0.0,
         "daily_cap": 0.0,
         "revoked": False,

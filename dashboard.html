@@ -145,6 +145,14 @@
 
 <div class="agents-grid" id="agentsGrid"></div>
 
+<div class="panel" style="margin-bottom:24px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+  <div class="panel-title" style="margin:0; margin-right:auto;">Governance & Compliance Tools</div>
+  <button class="revoke-btn" onclick="runBenchmark()">⚡ Run 1k Benchmark</button>
+  <a class="revoke-btn" href="/metrics" target="_blank" style="text-decoration:none; display:inline-block; text-align:center;">📊 Prometheus Metrics</a>
+  <a class="revoke-btn" href="/policy/export" target="_blank" style="text-decoration:none; display:inline-block; text-align:center;">🛡️ OPA Rego Export</a>
+  <a class="revoke-btn" href="/audit-log/export" target="_blank" style="text-decoration:none; display:inline-block; text-align:center;">📥 Download Audit CSV</a>
+</div>
+
 <div class="bottom-row">
   <div class="panel">
     <div class="panel-title">Live Activity Feed</div>
@@ -252,6 +260,22 @@ async function toggleRevoke(agentId, currentlyRevoked){
   const endpoint = currentlyRevoked ? "reinstate" : "revoke";
   await fetch(`${API}/agents/${agentId}/${endpoint}`, { method: "POST" });
   refreshAll();
+}
+
+async function runBenchmark(){
+  try {
+    const res = await fetch(`${API}/benchmark?count=1000`, { method: "POST" }).then(r=>r.json());
+    alert(`⚡ 1,000 Policy Benchmark Complete!\n\n` +
+          `• Evaluations: ${res.evaluations_count}\n` +
+          `• Total Time: ${res.total_time_ms} ms\n` +
+          `• Throughput: ${res.throughput_qps.toLocaleString()} QPS\n` +
+          `• Mean Latency: ${res.latency_us.mean} µs\n` +
+          `• P95 Latency: ${res.latency_us.p95} µs\n` +
+          `• P99 Latency: ${res.latency_us.p99} µs\n` +
+          `• Status: ${res.status}`);
+  } catch(e) {
+    alert("Benchmark failed to run: " + e.message);
+  }
 }
 
 refreshAll();

@@ -15,6 +15,7 @@ class ActionRequest(BaseModel):
     action: str
     amount: float = 0.0
     resource: Optional[str] = None
+    risk_score: float = Field(0.0, ge=0.0, le=1.0)
 
 
 class CapUpdate(BaseModel):
