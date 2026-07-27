@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000";
+const API_BASE = "";
 
 const GATES = [
   { id: "g1", label: "G1", name: "Kill Switch" },

@@ -94,6 +94,21 @@ def update_cap(agent_id: str, update: CapUpdate):
     return AGENTS[agent_id]
 
 
+@router.get("/status")
+def get_status():
+    ensure_current_spend_window()
+    return {
+        "kill_switch": STATE["kill_switch"],
+        "fleet_spend_today": STATE["fleet_spend_today"],
+        "fleet_daily_cap": FLEET_DAILY_CAP,
+    }
+
+
+@router.get("/feed")
+def get_feed(limit: int = 15):
+    return list_audit_log(limit)
+
+
 @router.post("/emergency-stop")
 def emergency_stop():
     STATE["kill_switch"] = True
@@ -110,6 +125,7 @@ def emergency_stop():
 
 
 @router.post("/resume-fleet")
+@router.post("/emergency-resume")
 def resume_fleet():
     STATE["kill_switch"] = False
     save_state()
